@@ -1,5 +1,5 @@
 ---
-- name: install Windows Updates
+- name: install  Ubuntu  Updates
   hosts: ubuntuserver
   gather_facts: yes
   
