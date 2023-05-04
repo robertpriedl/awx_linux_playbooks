@@ -1,0 +1,12 @@
+---
+- name: install Windows Updates
+  hosts: ubuntuserver
+  gather_facts: yes
+  
+  tasks:
+  - name: Install all security updates with automatic reboots
+    become: true
+    apt:
+      upgrade: yes
+      update_cache: yes
+        # cache_valid_time: 86400 #One day
