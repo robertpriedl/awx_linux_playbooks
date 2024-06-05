@@ -16,3 +16,4 @@
       - wget
       - curl
     state: present
+ 
