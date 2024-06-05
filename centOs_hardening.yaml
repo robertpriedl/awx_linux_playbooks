@@ -1,0 +1,7 @@
+---
+- name: Harden CentOS Stream 9
+  hosts: centos
+  become: yes
+  roles:
+    - role: common
+    - role: hardening

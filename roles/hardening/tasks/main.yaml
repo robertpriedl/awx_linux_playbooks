@@ -1,0 +1,45 @@
+---
+- name: Ensure SELinux is enforcing
+  ansible.builtin.command: setenforce 1
+  when: ansible_facts.selinux.status == "enabled"
+
+- name: Ensure SELinux is enforcing in config file
+  ansible.builtin.replace:
+    path: /etc/selinux/config
+    regexp: '^SELINUX=.*'
+    replace: 'SELINUX=enforcing'
+
+- name: Disable root login via SSH
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+    state: present
+    backup: yes
+  notify: Restart sshd
+
+- name: Set up firewall rules
+  ansible.builtin.firewalld:
+    service: ssh
+    permanent: yes
+    state: enabled
+
+- name: Ensure the firewall is running and enabled at boot
+  ansible.builtin.service:
+    name: firewalld
+    state: started
+    enabled: yes
+
+- name: Disable unused filesystems
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/CIS.conf
+    create: yes
+    line: 'install cramfs /bin/true'
+  notify: Reboot system
+
+- name: Configure password policies
+  ansible.builtin.lineinfile:
+    path: /etc/security/pwquality.conf
+    regexp: '^minlen'
+    line: 'minlen = 14'
+  notify: Reboot system
