@@ -1,0 +1,94 @@
+---
+- name: Create a new user with SSH keypair and configure SSH login
+  hosts: all
+  become: yes
+  # vars:
+  #   username: "newuser"
+  #   ssh_key_comment: "newuser@ansible"
+  #   email_recipient: "recipient@example.com"
+  tasks:
+    - name: Ensure the user is created
+      ansible.builtin.user:
+        name: "{{ username }}"
+        state: present
+        shell: /bin/bash
+        create_home: yes
+        groups: "sshusers"
+    
+    - name: Create .ssh directory for the user
+      ansible.builtin.file:
+        path: "/home/{{ username }}/.ssh"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0700'
+    
+    - name: Generate SSH key pair
+      community.crypto.openssh_keypair:
+        path: "/home/{{ username }}/.ssh/id_rsa"
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0600'
+        comment: "{{ ssh_key_comment }}"
+      register: ssh_key
+
+    - name: Save public key to authorized_keys
+      ansible.builtin.copy:
+        content: "{{ ssh_key.public_key }}"
+        dest: "/home/{{ username }}/.ssh/authorized_keys"
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0600'
+    
+    - name: Ensure password authentication is disabled and key-based login is enabled
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+    
+    - name: Ensure PubkeyAuthentication is enabled
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PubkeyAuthentication'
+        line: 'PubkeyAuthentication yes'
+        state: present
+
+    - name: Restart SSH service to apply changes
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted
+        enabled: yes
+
+- name: Output the SSH private key
+  hosts: localhost
+  tasks:
+    - name: Display SSH private key
+      ansible.builtin.debug:
+        msg: "SSH private key for {{ username }}:\n{{ ssh_key.private_key }}"
+
+- name: Send the SSH private key via email
+  hosts: localhost
+  vars:
+    email_subject: "SSH Private Key for {{ username }}"
+    email_body: |
+      Hello,
+
+      Please find attached the SSH private key for the user {{ username }}.
+
+      Private Key:
+      {{ ssh_key.private_key }}
+
+      Regards,
+      Your Ansible Automation
+  tasks:
+    - name: Send an email with the private key
+      community.general.mail:
+        host: smtp-relay.sendinblue.com
+        port: 587
+        username: "{{ mail_username }}"
+        password: "{{ mail_password }}"
+        from: "{{ mail_username }}"
+        to: "{{ email_recipient }}"
+        subject: "{{ email_subject }}"
+        body: "{{ email_body }}"
