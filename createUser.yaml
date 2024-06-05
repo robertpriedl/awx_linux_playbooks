@@ -23,22 +23,27 @@
         group: "{{ username }}"
         mode: '0700'
     
-    - name: Generate SSH key pair
-      community.crypto.openssh_keypair:
-        path: "/home/{{ username }}/.ssh/id_rsa"
-        owner: "{{ username }}"
-        group: "{{ username }}"
-        mode: '0600'
-        comment: "{{ email_recipient }}"
-      register: ssh_key
+    - name: Generate SSH key pair on target
+      ansible.builtin.command:
+        cmd: ssh-keygen -t rsa -b 4096 -f /home/{{ username }}/.ssh/id_rsa -N "" -C "{{ ssh_key_comment }}"
+      become_user: "{{ username }}"
+      register: ssh_keygen_result
 
-    - name: Save public key to authorized_keys
-      ansible.builtin.copy:
-        content: "{{ ssh_key.public_key }}"
-        dest: "/home/{{ username }}/.ssh/authorized_keys"
+    - name: Change ownership of SSH key files
+      ansible.builtin.file:
+        path: "/home/{{ username }}/.ssh/id_rsa"
+        state: file
         owner: "{{ username }}"
         group: "{{ username }}"
         mode: '0600'
+
+    - name: Change ownership of SSH public key file
+      ansible.builtin.file:
+        path: "/home/{{ username }}/.ssh/id_rsa.pub"
+        state: file
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: '0644'
     
     - name: Ensure password authentication is disabled and key-based login is enabled
       ansible.builtin.lineinfile:
@@ -77,7 +82,7 @@
       Please find attached the SSH private key for the user {{ username }}.
 
       Private Key:
-      {{ ssh_key.private_key }}
+      {{ lookup('file', "/home/{{ username }}/.ssh/id_rsa") }}
 
       Regards,
       Your Ansible Automation
