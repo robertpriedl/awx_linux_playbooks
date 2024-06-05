@@ -29,7 +29,7 @@
         owner: "{{ username }}"
         group: "{{ username }}"
         mode: '0600'
-        comment: "{{ ssh_key_comment }}"
+        comment: "{{ email_recipient }}"
       register: ssh_key
 
     - name: Save public key to authorized_keys
