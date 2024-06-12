@@ -17,3 +17,9 @@
       - curl
     state: present
  
+- name: Reboot system
+  ansible.builtin.reboot:
+    msg: "Reboot initiated by Ansible for hardening changes."
+    pre_reboot_delay: 120
+    post_reboot_delay: 30
+    reboot_timeout: 600
