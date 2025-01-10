@@ -69,4 +69,9 @@
         name: fail2ban
         state: restarted
 
+    - name: Restart rsyslog
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted
+
     
