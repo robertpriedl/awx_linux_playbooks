@@ -95,3 +95,12 @@
       service:
         name: fail2ban
         state: restarted
+
+    - name: Configure remote syslog server
+      ansible.builtin.lineinfile:
+        path: /etc/rsyslog.conf
+        regexp: '^#*.*'
+        line: '*.* @10.10.11.105:514'
+        state: present
+        backup: yes
+      notify: Restart rsyslog
