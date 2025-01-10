@@ -44,7 +44,6 @@
         state: stopped
         enabled: no
       with_items:
-        - cups
         - avahi-daemon
 
     - name: Set fail2ban to monitor SSH
