@@ -1,0 +1,97 @@
+---
+- name: Hardening Ubuntu 24.04 Server
+  hosts: all
+  become: yes
+  vars:
+    ssh_port: 22
+    allowed_ssh_users:
+      - your_user  # Ersetze "your_user" mit deinem SSH-Benutzer
+  tasks:
+    - name: Ensure system is up-to-date
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install necessary packages
+      apt:
+        name:
+          - ufw
+          - fail2ban
+          - nginx
+        state: latest
+
+    - name: Configure SSH settings
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        state: present
+        create: yes
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^#?Port', line: "Port {{ ssh_port }}" }
+        - { regexp: '^#?PermitRootLogin', line: "PermitRootLogin no" }
+        - { regexp: '^#?PasswordAuthentication', line: "PasswordAuthentication no" }
+        - { regexp: '^#?ChallengeResponseAuthentication', line: "ChallengeResponseAuthentication no" }
+        - { regexp: '^#?X11Forwarding', line: "X11Forwarding no" }
+        - { regexp: '^#?UsePAM', line: "UsePAM yes" }
+        - { regexp: '^#?MaxAuthTries', line: "MaxAuthTries 3" }
+        - { regexp: '^#?AllowUsers', line: "AllowUsers {{ allowed_ssh_users | join(' ') }}" }
+      notify:
+        - Restart SSH
+
+    - name: Configure UFW rules
+      ufw:
+        rule: allow
+        port: "{{ ssh_port }}"
+        proto: tcp
+      notify:
+        - Reload UFW
+
+    - name: Allow HTTP and HTTPS through firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      with_items:
+        - 80
+        - 443
+      notify:
+        - Reload UFW
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Disable unused services
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: no
+      with_items:
+        - cups
+        - avahi-daemon
+
+    - name: Set fail2ban to monitor SSH
+      lineinfile:
+        path: /etc/fail2ban/jail.local
+        state: present
+        create: yes
+        line: |
+          [sshd]
+          enabled = true
+      notify:
+        - Restart Fail2Ban
+
+  handlers:
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
+
+    - name: Reload UFW
+      command: ufw reload
+
+    - name: Restart Fail2Ban
+      service:
+        name: fail2ban
+        state: restarted
