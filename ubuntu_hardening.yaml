@@ -5,7 +5,8 @@
   vars:
     ssh_port: 22
     allowed_ssh_users:
-      - your_user  # Ersetze "your_user" mit deinem SSH-Benutzer
+      - localadmin  # Ersetze "your_user" mit deinem SSH-Benutzer
+      - ansible
   tasks:
     - name: Ensure system is up-to-date
       apt:
