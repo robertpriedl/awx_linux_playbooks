@@ -38,14 +38,6 @@
       notify:
         - Restart SSH
 
-    - name: Disable unused services
-      systemd:
-        name: "{{ item }}"
-        state: stopped
-        enabled: no
-      with_items:
-        - avahi-daemon
-
     - name: Set fail2ban to monitor SSH
       lineinfile:
         path: /etc/fail2ban/jail.local
