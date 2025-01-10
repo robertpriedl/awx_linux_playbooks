@@ -15,7 +15,6 @@
     - name: Install necessary packages
       apt:
         name:
-          - ufw
           - fail2ban
           - nginx
         state: latest
@@ -39,29 +38,6 @@
       notify:
         - Restart SSH
 
-    - name: Configure UFW rules
-      ufw:
-        rule: allow
-        port: "{{ ssh_port }}"
-        proto: tcp
-      notify:
-        - Reload UFW
-
-    - name: Allow HTTP and HTTPS through firewall
-      ufw:
-        rule: allow
-        port: "{{ item }}"
-        proto: tcp
-      with_items:
-        - 80
-        - 443
-      notify:
-        - Reload UFW
-
-    - name: Enable UFW
-      ufw:
-        state: enabled
-
     - name: Disable unused services
       systemd:
         name: "{{ item }}"
@@ -81,21 +57,7 @@
           enabled = true
       notify:
         - Restart Fail2Ban
-
-  handlers:
-    - name: Restart SSH
-      service:
-        name: ssh
-        state: restarted
-
-    - name: Reload UFW
-      command: ufw reload
-
-    - name: Restart Fail2Ban
-      service:
-        name: fail2ban
-        state: restarted
-
+        
     - name: Configure remote syslog server
       ansible.builtin.lineinfile:
         path: /etc/rsyslog.conf
@@ -104,3 +66,16 @@
         state: present
         backup: yes
       notify: Restart rsyslog
+      
+  handlers:
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
+
+    - name: Restart Fail2Ban
+      service:
+        name: fail2ban
+        state: restarted
+
+    
