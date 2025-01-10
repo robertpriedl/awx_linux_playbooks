@@ -17,7 +17,6 @@
       apt:
         name:
           - fail2ban
-          - nginx
         state: latest
 
     - name: Configure SSH settings
