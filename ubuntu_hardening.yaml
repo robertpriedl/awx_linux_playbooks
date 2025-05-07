@@ -8,6 +8,15 @@
       - localadmin  # Ersetze "your_user" mit deinem SSH-Benutzer
       - ansible
   tasks:
+    - name: Update apt cache with label change allowed
+      ansible.builtin.command: apt-get update --allow-releaseinfo-change
+
+    - name: Add ondrej/php GPG key using gpg file method
+      ansible.builtin.apt_key:
+        url: https://packages.sury.org/php/apt.gpg
+        keyring: /etc/apt/trusted.gpg.d/ondrej_php.gpg
+        state: present
+        
     - name: Ensure system is up-to-date
       apt:
         update_cache: yes
